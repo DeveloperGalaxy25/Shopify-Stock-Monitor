@@ -12,8 +12,50 @@ async function request(path, { method = "GET", token, body } = {}) {
     if (!res.ok) { const e = Error(data?.error || data?.message || `Request failed (${res.status})`); e.status = res.status; throw e } return data;
 }
 function Logo() { return <div className="logo"><span className="logo-icon"><Activity size={21} /></span><b>Store<span>Monitor</span></b></div> }
-function csvDownload(rows) { if (!rows.length) return; const cols = [...new Set(rows.flatMap(r => Object.keys(r)))]; const esc = v => `"${String(Array.isArray(v) ? v.join(", ") : v ?? "").replaceAll('"', '""')}"`; const data = [cols.map(esc).join(","), ...rows.map(r => cols.map(k => esc(r[k])).join(","))].join("\\r\\n"); const url = URL.createObjectURL(new Blob(["\\uFEFF" + data], { type: "text/csv;charset=utf-8" })); const a = document.createElement("a"); a.href = url; a.download = `store-audit-${new Date().toISOString().slice(0, 10)}.csv`; a.click(); URL.revokeObjectURL(url) }
-const labels = { out_of_stock: "Out of stock", missing_description: "Missing description", missing_seo_title: "Missing SEO title", missing_seo_description: "Missing SEO description" };
+function csvDownload(rows) {
+    if (!Array.isArray(rows) || rows.length === 0) return;
+
+    const columns = [
+        ...new Set(rows.flatMap((row) => Object.keys(row))),
+    ];
+
+    const escapeCell = (value) => {
+        if (Array.isArray(value)) {
+            value = value.join(", ");
+        } else if (value && typeof value === "object") {
+            value = JSON.stringify(value);
+        }
+
+        return `"${String(value ?? "").replace(/"/g, '""')}"`;
+    };
+
+    const csvRows = [
+        columns.map(escapeCell).join(","),
+        ...rows.map((row) =>
+            columns.map((column) => escapeCell(row[column])).join(",")
+        ),
+    ];
+
+    const csv = csvRows.join("\r\n");
+
+    const blob = new Blob(["\uFEFF", csv], {
+        type: "text/csv;charset=utf-8;",
+    });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = `store-audit-${new Date()
+        .toISOString()
+        .slice(0, 10)}.csv`;
+
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+} const labels = { out_of_stock: "Out of stock", missing_description: "Missing description", missing_seo_title: "Missing SEO title", missing_seo_description: "Missing SEO description" };
 function issueOf(r) { let raw = r.issue || r.issues || r.issueType || r.problem || r.check || "Product issue"; return (Array.isArray(raw) ? raw : String(raw).split(/[;,|]/).map(s => s.trim()).filter(Boolean)).map(x => labels[x] || x.replaceAll("_", " ")).join(", ") }
 function Login({ onLogin }) {
     const [email, setEmail] = useState(""), [password, setPassword] = useState(""), [show, setShow] = useState(false), [busy, setBusy] = useState(false), [error, setError] = useState(""); async function submit(e) { e.preventDefault(); setBusy(true); setError(""); try { await onLogin(email, password) } catch (e) { setError(e.message || "Unable to sign in") } finally { setBusy(false) } }
