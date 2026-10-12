@@ -3,9 +3,9 @@ import { createRoot } from "react-dom/client";
 import { Activity, AlertCircle, AlertTriangle, ArrowDownToLine, ArrowRight, ArrowUpRight, CheckCircle2, ChevronDown, Clock3, Eye, EyeOff, FileCheck2, Filter, LockKeyhole, LogOut, Mail, Package, Play, RefreshCw, Search, ShieldCheck, ShoppingBag, X } from "lucide-react";
 import "./styles.css";
 
-const API = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/+$/, "");
+const API = (import.meta.env.BACKEND_ENDPOINT || "").replace(/\/+$/, "");
 async function request(path, { method = "GET", token, body } = {}) {
-    if (!API) throw Error("Set VITE_API_BASE_URL in your Vercel environment variables.");
+    if (!API) throw Error("Set BACKEND_ENDPOINT in your Vercel environment variables.");
     const headers = { Accept: "application/json" }; if (body !== undefined) headers["Content-Type"] = "application/json"; if (token) headers.Authorization = `Bearer ${token}`;
     let res; try { res = await fetch(API + path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) }) } catch { throw Error("Could not reach the API. Check the Worker URL and CORS allowlist.") }
     const raw = await res.text(); let data = null; try { data = raw ? JSON.parse(raw) : null } catch { }
